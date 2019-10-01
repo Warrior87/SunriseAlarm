@@ -6,6 +6,11 @@
  *            -device resets if it cannot get an NTP response, after doing so, the wakeup time would be
  *            reset to 00:00
  *            -fixed by syncing with Blynk when device first powers on (resets)
+ *            
+ * 2/12/2019: added robust fading algorithm for customColor() function
+ * 
+ * 2/13/2019: adding PIR functionality to automatically start the sunset funciton
+ *            -should add functionality to turn on the lights during the day
  */
 
 #include <ESP8266WiFi.h>
@@ -23,18 +28,22 @@ const int greenPin = 13;
 int r = 0;
 int g = 0;
 int b = 0;
-int new_r;
-int new_g;
-int new_b;
+int custom_r;
+int custom_g;
+int custom_b;
 int minutes = 0;
 int seconds = 0;
 int hours = 0;
 bool wakeUp = false;
 bool blynk_wakeUp = false;
 bool blynk_sunset = false;
+bool blynk_autolight = false;
 bool custom = false;
 bool blynk_custom = false;
 bool prev_custom_state = true;
+bool PIR_state = false;
+bool movement_flag = false;
+int PIR_pin = 4;
 //weekday();         // day of the week (1-7), Sunday is day 1
 int prevWakeUpDay;
 int prevSunsetDay;
@@ -47,8 +56,9 @@ int weekdaySunsetMinute = 40;
 unsigned long prevMinTime = 0;
 unsigned long prevSecTime = 0;
 const int wakeupDuration = 45;                  /*duration of the total wakeup routine in minutes*/
-const int sunsetDuration = 50;
+const int sunsetDuration = 30;
 unsigned long prevDimTime = 0;
+unsigned long autolight_on_time;
 
 char ssid[] = "ComcastRR";  //  your network SSID (name)
 char pass[] = "coolpool";       // your network password
@@ -66,10 +76,10 @@ void digitalClockDisplay();
 void printDigits(int digits);
 void sendNTPpacket(IPAddress &address);
 
-BLYNK_APP_CONNECTED() {
-    Serial.println("sync event");
-    Blynk.syncAll();
-}
+//BLYNK_APP_CONNECTED() {
+//    Serial.println("sync event");
+//    Blynk.syncAll();
+//}
 
 BLYNK_WRITE(V0)
 {
@@ -77,23 +87,23 @@ BLYNK_WRITE(V0)
     blynk_custom = param.asInt();                        /*get state of custom switch in app*/
     Serial.println(blynk_custom);
     Serial.print("new RGB: ");
-    Serial.print(new_r);
+    Serial.print(custom_r);
     Serial.print(",");
-    Serial.print(new_g);
+    Serial.print(custom_g);
     Serial.print(",");
-    Serial.println(new_b);
+    Serial.println(custom_b);
     if((!prev_custom_state) && (blynk_custom)){
       Blynk.syncAll();
-      customColor();
+      customColor(custom_r, custom_g, custom_b);
     }
 //    if(blynk_custom){
 //      customColor();
 //    }
     else if(!blynk_custom){
-      new_r = 0;
-      new_g = 0;
-      new_b = 0;
-      customColor();
+      custom_r = 0;
+      custom_g = 0;
+      custom_b = 0;
+      customColor(custom_r, custom_g, custom_b);
     }
 }
 
@@ -106,20 +116,20 @@ BLYNK_WRITE(V1)
 BLYNK_WRITE(V2)
 {
     // get a RED channel value
-    new_r = param[0].asInt();
+    custom_r = param[0].asInt();
     // get a GREEN channel value
-    new_g = param[1].asInt();
+    custom_g = param[1].asInt();
     // get a BLUE channel value
-    new_b = param[2].asInt();
+    custom_b = param[2].asInt();
     
-    Serial.print(new_r);
+    Serial.print(custom_r);
     Serial.print(",");
-    Serial.print(new_g);
+    Serial.print(custom_g);
     Serial.print(",");
-    Serial.println(new_b);
+    Serial.println(custom_b);
     
     if(blynk_custom){
-      customColor();
+      customColor(custom_r, custom_g, custom_b);
     }
 }
 
@@ -173,10 +183,18 @@ BLYNK_WRITE(V5)
     Serial.print("sunset: "); Serial.println(blynk_sunset);
 }
 
+BLYNK_WRITE(V6)
+{
+    blynk_autolight = param.asInt();                        /*get state of wakeup switch in app*/
+    Serial.print("autolight: "); Serial.println(blynk_autolight);
+}
+
 void setup() {
   pinMode(redPin, OUTPUT);
   pinMode(bluePin, OUTPUT);
   pinMode(greenPin, OUTPUT);
+  pinMode(PIR_pin, INPUT);
+  //digitalWrite(PIR_pin, LOW);
   Serial.begin(115200);
     WiFi.begin(ssid, pass);
   while (WiFi.status() != WL_CONNECTED) {
@@ -194,8 +212,18 @@ void setup() {
   Blynk.syncAll();
 }
 
-void loop() {
+void loop() {         //////////////////////////////////////////////see how often we loop through the loop() function///////////////////////////////////////////////////////
   Blynk.run();
+
+  PIR_state = digitalRead(PIR_pin);
+  if(PIR_state){                                  /*if the movement pin is high*/   
+    Serial.println("motion detected");
+    checkSunsetTime();
+    checkAutolightTime();
+  }
+  if(millis() - autolight_on_time >= 60000){    /*if autolight has been on for a min, turn it off*/
+    autolightOff();
+  }
 
   //this updates the current time every second for an hour, so the server is only pinged once an hour
   if((millis() - prevMinTime) >= 60000){          /*if 60 seconds has passed*/
@@ -248,6 +276,33 @@ void checkWakeupTime()
   wakeUp = false;
 }
 
+void checkAutolightTime()
+{
+  Serial.println("autolight time checking");
+  if(blynk_custom){                     /*if custom color is selected, dont turn on autolight*/
+    return;
+  }
+  if(!blynk_autolight){
+    return;
+  }
+  if(isPM()){                                   /*want to operate between hours of 8am to 9pm*/
+    if(hours < 9){
+      autolightOn();
+    }
+    else{
+      return;
+    }
+  }
+  if(isAM()){
+    if(hours >= 8){
+      autolightOn();
+    }
+    else{
+      return;
+    }
+  }
+}
+
 void checkSunsetTime()
 {
   if(!blynk_sunset){
@@ -257,10 +312,17 @@ void checkSunsetTime()
     return;
   }
   if(weekday() != 1 && weekday() != 7){           /*if it is a weekday*/
-    if(hours < weekdaySunsetHour){                /*if it is before we need to sunset hour, exit*/
+    if(hours < 9){                                /*if it is before we need to sunset hour, exit*/
       return;
     }
-    else if(hours == weekdaySunsetHour && minutes >= weekdaySunsetMinute){
+    if(hours >= 11){                              /*if it is after 11, exit*/
+      return;
+    }
+    if(prevSunsetDay == weekday()){              /*if we have woken up today already, exit the routiene*/
+      return;
+    }
+    else{
+      prevSunsetDay = weekday();                  /*otherwise, reset the day we have woken up*/
       sunset();
       return;
     }
@@ -345,11 +407,7 @@ void wakeUpRoutine()
 }
 
 void sunset()
-{
-  if(prevSunsetDay == weekday()){              /*if we have woken up today already, exit the routiene*/
-    return;
-  }
-  prevSunsetDay = weekday();                  /*otherwise, reset the day we have woken up*/
+{  
   double sunsetBrightness = 0.5;
   int sunsetElapsed = 0;
   while((sunsetElapsed < sunsetDuration) && blynk_sunset){
@@ -389,37 +447,49 @@ void sunset()
   digitalClockDisplay();
 }
 
-//void customColor()
-//{
-//  analogWrite(redPin, r);
-//  analogWrite(bluePin, b);
-//  analogWrite(greenPin, g);
-//}
 
-void customColor()
+void customColor(int new_r, int new_g, int new_b)
 {  
-  while((new_r != r) || (new_g != g) || (new_b != b)){    /*if current pwm values dont match desired ones, keep dimming towards them*/
+  double percent = 0.00;
+  double distance_r;
+  double distance_g;
+  double distance_b;
+
+  distance_r = abs(new_r - r);
+  distance_g = abs(new_g - g);
+  distance_b = abs(new_b - b);
+  
+  while((percent < 1) && ((distance_r > 5)||(distance_g > 5)||(distance_b > 5))){    /*if current pwm values dont match desired ones, keep dimming towards them*/
     Blynk.run();
     if(millis() - prevDimTime >= 5){                    /*dim a step every x milliseconds*/
       prevDimTime = millis();
+      percent = percent + 0.001;
+      /*first take abs(new_r - r) to get distance of actual from desired*/
+      /*for incrementing pwm value, increment decimal value, multiply by distance, then add to start r*/
+      /*for decrementing pwm value, increment decimal value, multiply by distance, then subtract from start r*/
       if(new_r > r){                                         /*check if we need to increment or decrement rgb value*/
-        r++;
+        r = r + (percent * distance_r);
       }
       else if(new_r < r){
-        r--;
+        r = r - (percent * distance_r);
       }
       if(new_g > g){                                         /*check if we need to increment or decrement rgb value*/
-        g++;
+        g = g + (percent * distance_g);
       }
       else if(new_g < g){
-        g--;
+        g = g - (percent * distance_g);
       }
       if(new_b > b){                                         /*check if we need to increment or decrement rgb value*/
-        b++;
+        b = b + (percent * distance_b);
       }
       else if(new_b < b){
-        b--;
+        b = b - (percent * distance_b);
       }
+      
+      distance_r = abs(new_r - r);                          /*recalculate the distance every iteration*/
+      distance_g = abs(new_g - g);
+      distance_b = abs(new_b - b);
+      
       Serial.print(r);
       Serial.print("  ");
       Serial.print(g);
@@ -430,59 +500,34 @@ void customColor()
       analogWrite(greenPin, g);
     }
   }
+  r = new_r;
+  g = new_g;
+  b = new_b;
+  analogWrite(redPin, r);
+  analogWrite(bluePin, b);
+  analogWrite(greenPin, g);
+  Serial.print(r);
+  Serial.print("  ");
+  Serial.print(g);
+  Serial.print("  ");
+  Serial.println(b);
 }
 
-//void customColor()
-//{  
-//  int start_r;
-//  int start_g;
-//  int start_b;
-//  double percent = 0;
-//  double distance_r;
-//  double distance_g;
-//  double distance_b;
-//
-//  distance_r = abs(new_r - r);
-//  distance_g = abs(new_g - g);
-//  distance_b = abs(new_b - b);
-//  
-//  while(((new_r != r) || (new_g != g) || (new_b != b)) && (percent < 1)){    /*if current pwm values dont match desired ones, keep dimming towards them*/
-//    Blynk.run();
-//    if(millis() - prevDimTime >= 5){                    /*dim a step every x milliseconds*/
-//      prevDimTime = millis();
-//      percent = percent + 0.01;
-//      /*first take abs(new_r - r) to get distance of actual from desired*/
-//      /*for incrementing pwm value, increment decimal value, multiply by distance, then add to start r*/
-//      /*for decrementing pwm value, increment decimal value, multiply by distance, then subtract from start r*/
-//      if(new_r > r){                                         /*check if we need to increment or decrement rgb value*/
-//        r = start_r + (percent * distance_r);
-//      }
-//      else if(new_r < r){
-//        r = start_r - (percent * distance_r);
-//      }
-//      if(new_g > g){                                         /*check if we need to increment or decrement rgb value*/
-//        g = start_g + (percent * distance_g);
-//      }
-//      else if(new_g < g){
-//        g = start_g - (percent * distance_g);
-//      }
-//      if(new_b > b){                                         /*check if we need to increment or decrement rgb value*/
-//        b = start_b + (percent * distance_b);
-//      }
-//      else if(new_b < b){
-//        b = start_b - (percent * distance_b);
-//      }
-//      Serial.print(r);
-//      Serial.print("  ");
-//      Serial.print(g);
-//      Serial.print("  ");
-//      Serial.println(b);
-//      analogWrite(redPin, r);
-//      analogWrite(bluePin, b);
-//      analogWrite(greenPin, g);
-//    }
-//  }
-//}
+void autolightOn()
+{
+  Serial.println("autolight on");
+  autolight_on_time = millis();
+  customColor(1023,1023,1023);
+}
+
+void autolightOff()
+{
+  if(blynk_custom){
+    return;
+  }
+  Serial.println("autolight off");
+  customColor(0,0,0);
+}
 
 void digitalClockDisplay()
 {
