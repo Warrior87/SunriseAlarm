@@ -2,15 +2,18 @@
 //will also have party light capabilities
 
 /*
- * 1/19/2019: may have fixed bug where lights would begin wakeup routiene at midnight (00:00) 24hr format
+ * 1/19/2019: -may have fixed bug where lights would begin wakeup routiene at midnight (00:00) 24hr format
  *            -device resets if it cannot get an NTP response, after doing so, the wakeup time would be
  *            reset to 00:00
  *            -fixed by syncing with Blynk when device first powers on (resets)
  *            
- * 2/12/2019: added robust fading algorithm for customColor() function
+ * 2/12/2019: -added robust fading algorithm for customColor() function
  * 
- * 2/13/2019: adding PIR functionality to automatically start the sunset funciton
+ * 2/13/2019: -adding PIR functionality to automatically start the sunset funciton
  *            -should add functionality to turn on the lights during the day
+ *            
+ * 5/14/2019: -fixed daylight savings time bug by adding button
+ *            -fixed bug where user had to wait 1 min for susnet to turn on
  */
 
 #include <ESP8266WiFi.h>
@@ -38,6 +41,7 @@ bool wakeUp = false;
 bool blynk_wakeUp = false;
 bool blynk_sunset = false;
 bool blynk_autolight = false;
+bool blynk_daylightSavings = false;
 bool custom = false;
 bool blynk_custom = false;
 bool prev_custom_state = true;
@@ -179,14 +183,20 @@ BLYNK_WRITE(V4)                                                /*weekend start t
 
 BLYNK_WRITE(V5)
 {
-    blynk_sunset = param.asInt();                        /*get state of wakeup switch in app*/
+    blynk_sunset = param.asInt();                        /*get state of sunset switch in app*/
     Serial.print("sunset: "); Serial.println(blynk_sunset);
 }
 
 BLYNK_WRITE(V6)
 {
-    blynk_autolight = param.asInt();                        /*get state of wakeup switch in app*/
+    blynk_autolight = param.asInt();                        /*get state of autolight switch in app*/
     Serial.print("autolight: "); Serial.println(blynk_autolight);
+}
+
+BLYNK_WRITE(V7)
+{
+    blynk_daylightSavings = param.asInt();                        /*get state of daylight savings switch in app*/
+    Serial.print("daylight savings: "); Serial.println(blynk_daylightSavings);
 }
 
 void setup() {
@@ -305,6 +315,9 @@ void checkAutolightTime()
 
 void checkSunsetTime()
 {
+  if(blynk_custom){                     /*if custom color is selected, dont turn on autolight*/
+    return;
+  }
   if(!blynk_sunset){
     return;
   }
@@ -410,7 +423,14 @@ void sunset()
 {  
   double sunsetBrightness = 0.5;
   int sunsetElapsed = 0;
-  while((sunsetElapsed < sunsetDuration) && blynk_sunset){
+  r = 1023 * sunsetBrightness;                      /*turn the lights on so we dont have to wait 1 min*/
+  b = 80 * sunsetBrightness;
+  g = 401 * sunsetBrightness;
+  analogWrite(redPin, r);
+  analogWrite(bluePin, b);
+  analogWrite(greenPin, g);
+  
+  while((sunsetElapsed < sunsetDuration) && blynk_sunset && (!blynk_custom)){
     Blynk.run();
     if((millis() - prevSecTime) >= 1000){
       prevSecTime = millis();
@@ -532,6 +552,11 @@ void autolightOff()
 void digitalClockDisplay()
 {
   hours = hour();
+
+  if(blynk_daylightSavings){            //compensate for daylight savings time, if true, add 1 hour
+    hours = hours + 1;
+  }
+  
   if(hours > 12){
     hours = hours - 12;
   }
