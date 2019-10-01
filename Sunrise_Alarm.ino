@@ -13,7 +13,11 @@
  *            -should add functionality to turn on the lights during the day
  *            
  * 5/14/2019: -fixed daylight savings time bug by adding button
- *            -fixed bug where user had to wait 1 min for susnet to turn on
+ *            -fixed bug where user had to wait 1 min for sunset to turn on
+ *              -sunset never turns on
+ *              
+ * 6/4/2019:  -added random color capability for wakeup
+ *              -want to change how it works, so I can use the same funciton for a random, custom color
  */
 
 #include <ESP8266WiFi.h>
@@ -31,6 +35,9 @@ const int greenPin = 13;
 int r = 0;
 int g = 0;
 int b = 0;
+int random_r;
+int random_g;
+int random_b;
 int custom_r;
 int custom_g;
 int custom_b;
@@ -47,6 +54,8 @@ bool blynk_custom = false;
 bool prev_custom_state = true;
 bool PIR_state = false;
 bool movement_flag = false;
+bool blynk_random = false;
+bool blynk_random_color = false;
 int PIR_pin = 4;
 //weekday();         // day of the week (1-7), Sunday is day 1
 int prevWakeUpDay;
@@ -63,6 +72,9 @@ const int wakeupDuration = 45;                  /*duration of the total wakeup r
 const int sunsetDuration = 30;
 unsigned long prevDimTime = 0;
 unsigned long autolight_on_time;
+
+//variables for random color selection
+int randColorMix;
 
 char ssid[] = "ComcastRR";  //  your network SSID (name)
 char pass[] = "coolpool";       // your network password
@@ -199,11 +211,26 @@ BLYNK_WRITE(V7)
     Serial.print("daylight savings: "); Serial.println(blynk_daylightSavings);
 }
 
+BLYNK_WRITE(V8)
+{
+    blynk_random = param.asInt();                        
+}
+
+BLYNK_WRITE(V9)
+{
+    blynk_random_color = param.asInt();  
+    randomColor(); 
+    customColor(random_r, random_g, random_b);                     
+}
+
 void setup() {
   pinMode(redPin, OUTPUT);
   pinMode(bluePin, OUTPUT);
   pinMode(greenPin, OUTPUT);
   pinMode(PIR_pin, INPUT);
+
+  randomSeed(analogRead(0));
+  
   //digitalWrite(PIR_pin, LOW);
   Serial.begin(115200);
     WiFi.begin(ssid, pass);
@@ -342,11 +369,81 @@ void checkSunsetTime()
   }
 }
 
+void randomColor(){
+  //determine if this is going to be a mix of 3, 2, or 1 colors
+  randColorMix = random(1, 7);
+  
+  //for 1 color:
+  //determine which color is selected
+  //full pwm for that color
+
+  //for 2 colors:
+  //determine the pwm value for the first color
+  //determine the pwm value for the next color using the value of the previous color
+
+  //for 3 colors:
+  //determine the pwm value for the first color
+  //determine the pwm value for the next color using the value of the previous color
+  //determine the pwm value for the next color using the value of the previous color
+  
+  switch (randColorMix)
+  {
+    case 1:
+      //red and green
+      random_r = random(1, 1023);
+      random_g = 1023 - random_r;
+      break;
+    case 2:
+      //red and blue
+      random_r = random(1, 1023);
+      random_b = 1023 - random_r;
+      break;
+    case 3:
+      //blue and green
+      random_b = random(1, 1023);
+      random_g = 1023 - random_b;
+      break;
+    case 4:
+      //red
+      random_r = 1023;
+      break;
+    case 5:
+      //green
+      random_g = 1023;
+      break;
+    case 6:
+      //blue
+      random_b = 1023;
+      break;
+    case 7:
+      //red, green, and blue
+      random_r = random(1, 1023);
+      random_g = random(1, 1023);
+      random_b = random(1, 1023);
+  }  
+}
+
 void wakeUpRoutine()
 {
+  int r_wakeup;
+  int b_wakeup;
+  int g_wakeup;
+  
   if(prevWakeUpDay == weekday()){              /*if we have woken up today already, exit the routiene*/
     wakeUp = false;
     return;
+  }
+
+  if(blynk_random){
+    randomColor();
+    r_wakeup = random_r;
+    b_wakeup = random_b;
+    g_wakeup = random_g;
+  }
+  else if(!blynk_random){
+    r_wakeup = 1023;
+    b_wakeup = 80;
+    g_wakeup = 401;
   }
   prevWakeUpDay = weekday();                  /*otherwise, reset the day we have woken up*/
   Serial.println("wakeup routiene entered");
@@ -375,9 +472,9 @@ void wakeUpRoutine()
           brightPercent = brightPercent + 0.02;
           Serial.print("brightPercent  "); Serial.println(brightPercent);
         }
-        r = 1023 * brightPercent;
-        b = 80 * brightPercent;
-        g = 401 * brightPercent;
+        r = r_wakeup * brightPercent;
+        b = b_wakeup * brightPercent;
+        g = g_wakeup * brightPercent;
         analogWrite(redPin, r);
         analogWrite(bluePin, b);
         analogWrite(greenPin, g);
