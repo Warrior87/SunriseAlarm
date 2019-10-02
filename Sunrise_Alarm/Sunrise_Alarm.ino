@@ -332,6 +332,7 @@ void checkWakeupTime()
     }
   }
   wakeUp = false;
+  return;
 }
 
 void checkSunsetTime()
@@ -361,6 +362,7 @@ void checkSunsetTime()
       return;
     }
   }
+  return;
 }
 
 void randomColor(){
@@ -414,6 +416,7 @@ void randomColor(){
       random_r = random(1, 1023);
       random_g = random(1, 1023);
       random_b = random(1, 1023);
+      break;
   }  
 }
 
