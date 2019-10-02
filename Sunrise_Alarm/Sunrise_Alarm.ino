@@ -247,7 +247,10 @@ void setup() {
   #endif
     WiFi.begin(ssid, pass);
   while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
+    analogWrite(bluePin, 10);                    /*lights will blink blue while connecting to wifi*/
+    delay(1000);
+    analogWrite(bluePin, 0);
+    delay(1000);
     #ifdef DEBUG
       Serial.print(".");
     #endif
@@ -259,7 +262,13 @@ void setup() {
   checkWakeupTime();
 //  setSyncInterval(300);
   Blynk.begin(auth, ssid, pass);
-  Blynk.run();  
+  //Blynk.run();  
+  while (Blynk.connect() != true){
+    analogWrite(greenPin, 10);
+    delay(1000);
+    analogWrite(greenPin, 0);
+    delay(1000);
+  }
   Blynk.syncAll();
 }
 
