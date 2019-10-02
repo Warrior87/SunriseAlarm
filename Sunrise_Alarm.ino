@@ -23,7 +23,7 @@
 
 // You should get Auth Token in the Blynk App.
 // Go to the Project Settings (nut icon).
-char auth[] = "7fd7e27b6e7b4fdca1d3066345d3e903";
+char auth[] = "!!!!!!!!!Blynk Token Here!!!!!!!!!";
 
 const int redPin = 14;
 const int bluePin = 12;
@@ -64,8 +64,8 @@ const int sunsetDuration = 30;
 unsigned long prevDimTime = 0;
 unsigned long autolight_on_time;
 
-char ssid[] = "ComcastRR";  //  your network SSID (name)
-char pass[] = "coolpool";       // your network password
+char ssid[] = "SSID";  //  your network SSID (name)
+char pass[] = "password";       // your network password
 
 // NTP Servers:
 static const char ntpServerName[] = "us.pool.ntp.org";
