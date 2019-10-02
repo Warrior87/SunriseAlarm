@@ -386,17 +386,17 @@ void randomColor(){
   {
     case 1:
       //red and green
-      random_r = random(1, 1023);
+      random_r = random(1, 1024);
       random_g = 1023 - random_r;
       break;
     case 2:
       //red and blue
-      random_r = random(1, 1023);
+      random_r = random(1, 1024);
       random_b = 1023 - random_r;
       break;
     case 3:
       //blue and green
-      random_b = random(1, 1023);
+      random_b = random(1, 1024);
       random_g = 1023 - random_b;
       break;
     case 4:
@@ -413,9 +413,9 @@ void randomColor(){
       break;
     case 7:
       //red, green, and blue
-      random_r = random(1, 1023);
-      random_g = random(1, 1023);
-      random_b = random(1, 1023);
+      random_r = random(1, 1024);
+      random_g = random(1, 1024);
+      random_b = random(1, 1024);
       break;
   }  
 }
