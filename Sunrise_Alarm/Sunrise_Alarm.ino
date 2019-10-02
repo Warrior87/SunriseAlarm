@@ -24,6 +24,7 @@
 #include <WiFiUdp.h>
 #include <TimeLib.h>
 #include <BlynkSimpleEsp8266.h>
+//#define DEBUG
 
 // You should get Auth Token in the Blynk App.
 // Go to the Project Settings (nut icon).
@@ -101,13 +102,15 @@ BLYNK_WRITE(V0)
 {
     prev_custom_state = blynk_custom;
     blynk_custom = param.asInt();                        /*get state of custom switch in app*/
-    Serial.println(blynk_custom);
-    Serial.print("new RGB: ");
-    Serial.print(custom_r);
-    Serial.print(",");
-    Serial.print(custom_g);
-    Serial.print(",");
-    Serial.println(custom_b);
+    #ifdef DEBUG
+      Serial.println(blynk_custom);
+      Serial.print("new RGB: ");
+      Serial.print(custom_r);
+      Serial.print(",");
+      Serial.print(custom_g);
+      Serial.print(",");
+      Serial.println(custom_b);
+    #endif
     if((!prev_custom_state) && (blynk_custom)){
       Blynk.syncAll();
       customColor(custom_r, custom_g, custom_b);
@@ -126,7 +129,9 @@ BLYNK_WRITE(V0)
 BLYNK_WRITE(V1)
 {
     blynk_wakeUp = param.asInt();                        /*get state of wakeup switch in app*/
-    Serial.print("wakeup: "); Serial.println(blynk_wakeUp);
+    #ifdef DEBUG
+      Serial.print("wakeup: "); Serial.println(blynk_wakeUp);
+    #endif
 }
 
 BLYNK_WRITE(V2)
@@ -137,12 +142,14 @@ BLYNK_WRITE(V2)
     custom_g = param[1].asInt();
     // get a BLUE channel value
     custom_b = param[2].asInt();
-    
-    Serial.print(custom_r);
-    Serial.print(",");
-    Serial.print(custom_g);
-    Serial.print(",");
-    Serial.println(custom_b);
+
+    #ifdef DEBUG
+      Serial.print(custom_r);
+      Serial.print(",");
+      Serial.print(custom_g);
+      Serial.print(",");
+      Serial.println(custom_b);
+    #endif
     
     if(blynk_custom){
       customColor(custom_r, custom_g, custom_b);
@@ -152,16 +159,18 @@ BLYNK_WRITE(V2)
 BLYNK_WRITE(V3)                                                /*weekday start time*/
 {
   TimeInputParam t(param);
-  if (t.hasStartTime())
-  {
-    Serial.println(String("Start: ") +
-                   t.getStartHour() + ":" +
-                   t.getStartMinute() + ":" +
-                   t.getStartSecond());
-    weekdayWakeupHour = t.getStartHour();
-    weekdayWakeupMinute = t.getStartMinute();
-    Serial.print("weekday wakeup time  "); Serial.print(weekdayWakeupHour); Serial.print(":"); Serial.println(weekdayWakeupMinute);
-  }
+  #ifdef DEBUG
+    if (t.hasStartTime())
+    {
+      Serial.println(String("Start: ") +
+                     t.getStartHour() + ":" +
+                     t.getStartMinute() + ":" +
+                     t.getStartSecond());
+      weekdayWakeupHour = t.getStartHour();
+      weekdayWakeupMinute = t.getStartMinute();
+      Serial.print("weekday wakeup time  "); Serial.print(weekdayWakeupHour); Serial.print(":"); Serial.println(weekdayWakeupMinute);
+    }
+  #endif
 //  for (int i = 1; i <= 7; i++) {
 //    if (t.isWeekdaySelected(i)) {
 //      Serial.println(String("Day ") + i + " is selected");
@@ -174,16 +183,18 @@ BLYNK_WRITE(V3)                                                /*weekday start t
 BLYNK_WRITE(V4)                                                /*weekend start time*/
 {
   TimeInputParam t(param);
-  if (t.hasStartTime())
-  {
-    Serial.println(String("Start: ") +
-                   t.getStartHour() + ":" +
-                   t.getStartMinute() + ":" +
-                   t.getStartSecond());
-    weekendWakeupHour = t.getStartHour();;
-    weekendWakeupMinute = t.getStartMinute();
-    Serial.print("weekend wakeup time  "); Serial.print(weekendWakeupHour); Serial.print(":"); Serial.println(weekendWakeupMinute);
-  }
+  #ifdef DEBUG
+    if (t.hasStartTime())
+    {
+      Serial.println(String("Start: ") +
+                     t.getStartHour() + ":" +
+                     t.getStartMinute() + ":" +
+                     t.getStartSecond());
+      weekendWakeupHour = t.getStartHour();;
+      weekendWakeupMinute = t.getStartMinute();
+      Serial.print("weekend wakeup time  "); Serial.print(weekendWakeupHour); Serial.print(":"); Serial.println(weekendWakeupMinute);
+    }
+  #endif
 //  for (int i = 1; i <= 7; i++) {
 //    if (t.isWeekdaySelected(i)) {
 //      Serial.println(String("Day ") + i + " is selected");
@@ -196,19 +207,25 @@ BLYNK_WRITE(V4)                                                /*weekend start t
 BLYNK_WRITE(V5)
 {
     blynk_sunset = param.asInt();                        /*get state of sunset switch in app*/
-    Serial.print("sunset: "); Serial.println(blynk_sunset);
+    #ifdef DEBUG
+      Serial.print("sunset: "); Serial.println(blynk_sunset);
+    #endif
 }
 
 BLYNK_WRITE(V6)
 {
     blynk_autolight = param.asInt();                        /*get state of autolight switch in app*/
-    Serial.print("autolight: "); Serial.println(blynk_autolight);
+    #ifdef DEBUG
+      Serial.print("autolight: "); Serial.println(blynk_autolight);
+    #endif
 }
 
 BLYNK_WRITE(V7)
 {
     blynk_daylightSavings = param.asInt();                        /*get state of daylight savings switch in app*/
-    Serial.print("daylight savings: "); Serial.println(blynk_daylightSavings);
+    #ifdef DEBUG
+      Serial.print("daylight savings: "); Serial.println(blynk_daylightSavings);
+    #endif
 }
 
 BLYNK_WRITE(V8)
@@ -232,11 +249,15 @@ void setup() {
   randomSeed(analogRead(0));
   
   //digitalWrite(PIR_pin, LOW);
-  Serial.begin(115200);
+  #ifdef DEBUG
+    Serial.begin(115200);
+  #endif
     WiFi.begin(ssid, pass);
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
-    Serial.print(".");
+    #ifdef DEBUG
+      Serial.print(".");
+    #endif
   }
   Udp.begin(localPort);
   setSyncProvider(getNtpTime);
@@ -253,8 +274,10 @@ void loop() {         //////////////////////////////////////////////see how ofte
   Blynk.run();
 
   PIR_state = digitalRead(PIR_pin);
-  if(PIR_state){                                  /*if the movement pin is high*/   
-    Serial.println("motion detected");
+  if(PIR_state){                                  /*if the movement pin is high*/ 
+    #ifdef DEBUG  
+      Serial.println("motion detected");
+    #endif
     checkSunsetTime();
     checkAutolightTime();
   }
@@ -266,7 +289,9 @@ void loop() {         //////////////////////////////////////////////see how ofte
   if((millis() - prevMinTime) >= 60000){          /*if 60 seconds has passed*/
      prevMinTime = millis();
      minutes++;                                   /*increment minute*/
-     Serial.print("System calculated time  "); Serial.print(hours); Serial.print(":"); Serial.println(minutes);
+     #ifdef DEBUG
+      Serial.print("System calculated time  "); Serial.print(hours); Serial.print(":"); Serial.println(minutes);
+    #endif
      checkWakeupTime();                           /*check if it is the wakeup time every minute*/
      checkSunsetTime();
      if(wakeUp){
@@ -289,7 +314,9 @@ void checkWakeupTime()
     return;
   }
   if(weekday() != 1 && weekday() != 7){           /*if it is a weekday*/
-    Serial.println("it is a weekday");
+    #ifdef DEBUG
+      Serial.println("it is a weekday");
+    #endif
     if(hours < weekdayWakeupHour){                /*if it is before we need to wakeup hour, exit*/
       wakeUp = false;
       return;
@@ -300,7 +327,9 @@ void checkWakeupTime()
     }
   }
   else{
-    Serial.println("it is a weekend");
+    #ifdef DEBUG
+      Serial.println("it is a weekend");
+    #endif
     if(hours < weekendWakeupHour){                /*if it is before we need to wakeup hour, exit*/
       wakeUp = false;
       return;
@@ -315,7 +344,9 @@ void checkWakeupTime()
 
 void checkAutolightTime()
 {
-  Serial.println("autolight time checking");
+  #ifdef DEBUG
+    Serial.println("autolight time checking");
+  #endif
   if(blynk_custom){                     /*if custom color is selected, dont turn on autolight*/
     return;
   }
@@ -446,13 +477,17 @@ void wakeUpRoutine()
     g_wakeup = 401;
   }
   prevWakeUpDay = weekday();                  /*otherwise, reset the day we have woken up*/
-  Serial.println("wakeup routiene entered");
-  Serial.print("weekday wakeup time  "); Serial.print(weekdayWakeupHour); Serial.print(":"); Serial.println(weekdayWakeupMinute);
-  Serial.print("weekend wakeup time  "); Serial.print(weekendWakeupHour); Serial.print(":"); Serial.println(weekendWakeupMinute);
-  Serial.print("System time before contacting server  "); Serial.print(hours); Serial.print(":"); Serial.println(minutes);
+  #ifdef DEBUG
+    Serial.println("wakeup routiene entered");
+    Serial.print("weekday wakeup time  "); Serial.print(weekdayWakeupHour); Serial.print(":"); Serial.println(weekdayWakeupMinute);
+    Serial.print("weekend wakeup time  "); Serial.print(weekendWakeupHour); Serial.print(":"); Serial.println(weekendWakeupMinute);
+    Serial.print("System time before contacting server  "); Serial.print(hours); Serial.print(":"); Serial.println(minutes);
+  #endif
   getNtpTime();                              
   digitalClockDisplay();
-  Serial.print("System time after contacting server  "); Serial.print(hours); Serial.print(":"); Serial.println(minutes);
+  #ifdef DEBUG
+    Serial.print("System time after contacting server  "); Serial.print(hours); Serial.print(":"); Serial.println(minutes);
+  #endif
   
   double brightPercent = 0;
   int wakeupElapsed = 0;                          /*elapsed time of the wakeup routine in minutes*/
@@ -470,7 +505,9 @@ void wakeUpRoutine()
         //do brightening in this area
         if(brightPercent < 1){
           brightPercent = brightPercent + 0.02;
-          Serial.print("brightPercent  "); Serial.println(brightPercent);
+          #ifdef DEBUG
+            Serial.print("brightPercent  "); Serial.println(brightPercent);
+          #endif
         }
         r = r_wakeup * brightPercent;
         b = b_wakeup * brightPercent;
@@ -478,11 +515,13 @@ void wakeUpRoutine()
         analogWrite(redPin, r);
         analogWrite(bluePin, b);
         analogWrite(greenPin, g);
-        Serial.print(r);
-        Serial.print(",");
-        Serial.print(b);
-        Serial.print(",");
-        Serial.println(g);
+        #ifdef DEBUG
+          Serial.print(r);
+          Serial.print(",");
+          Serial.print(b);
+          Serial.print(",");
+          Serial.println(g);
+        #endif
         if(minutes >= 60){    
           minutes = 0;                       
           getNtpTime();                               /*if it has been an hour, get the official time*/
@@ -538,7 +577,9 @@ void sunset()
         minutes++;                                   /*increment minute*/
         if(sunsetBrightness > 0){
             sunsetBrightness = sunsetBrightness - 0.01;
-            Serial.print("sunsetBrightness  "); Serial.println(sunsetBrightness);
+            #ifdef DEBUG
+              Serial.print("sunsetBrightness  "); Serial.println(sunsetBrightness);
+            #endif
           }
           r = 1023 * sunsetBrightness;
           b = 80 * sunsetBrightness;
@@ -546,11 +587,13 @@ void sunset()
           analogWrite(redPin, r);
           analogWrite(bluePin, b);
           analogWrite(greenPin, g);
-          Serial.print(r);
-          Serial.print(",");
-          Serial.print(b);
-          Serial.print(",");
-          Serial.println(g);
+          #ifdef DEBUG
+            Serial.print(r);
+            Serial.print(",");
+            Serial.print(b);
+            Serial.print(",");
+            Serial.println(g);
+          #endif
         if(minutes >= 60){    
           minutes = 0;                       
        }
@@ -606,12 +649,13 @@ void customColor(int new_r, int new_g, int new_b)
       distance_r = abs(new_r - r);                          /*recalculate the distance every iteration*/
       distance_g = abs(new_g - g);
       distance_b = abs(new_b - b);
-      
-      Serial.print(r);
-      Serial.print("  ");
-      Serial.print(g);
-      Serial.print("  ");
-      Serial.println(b);
+      #ifdef DEBUG
+        Serial.print(r);
+        Serial.print("  ");
+        Serial.print(g);
+        Serial.print("  ");
+        Serial.println(b);
+      #endif
       analogWrite(redPin, r);
       analogWrite(bluePin, b);
       analogWrite(greenPin, g);
@@ -623,16 +667,20 @@ void customColor(int new_r, int new_g, int new_b)
   analogWrite(redPin, r);
   analogWrite(bluePin, b);
   analogWrite(greenPin, g);
-  Serial.print(r);
-  Serial.print("  ");
-  Serial.print(g);
-  Serial.print("  ");
-  Serial.println(b);
+  #ifdef DEBUG
+    Serial.print(r);
+    Serial.print("  ");
+    Serial.print(g);
+    Serial.print("  ");
+    Serial.println(b);
+  #endif
 }
 
 void autolightOn()
 {
-  Serial.println("autolight on");
+  #ifdef DEBUG
+    Serial.println("autolight on");
+  #endif
   autolight_on_time = millis();
   customColor(1023,1023,1023);
 }
@@ -642,7 +690,9 @@ void autolightOff()
   if(blynk_custom){
     return;
   }
-  Serial.println("autolight off");
+  #ifdef DEBUG
+    Serial.println("autolight off");
+  #endif
   customColor(0,0,0);
 }
 
@@ -659,34 +709,37 @@ void digitalClockDisplay()
   }
   minutes = minute();
   seconds = second();
-  
-  // digital clock display of the time
-  Serial.print(hour());
-  printDigits(minute());
-  printDigits(second());
-  if(isAM()){
-    Serial.print(" AM");
-  }
-  else{
-    Serial.print(" PM");
-  }
-  Serial.print(" ");
-  Serial.print(day());
-  Serial.print(".");
-  Serial.print(month());
-  Serial.print(".");
-  Serial.print(year());
-  Serial.println();
-  
+
+  #ifdef DEBUG
+    // digital clock display of the time
+    Serial.print(hour());
+    printDigits(minute());
+    printDigits(second());
+    if(isAM()){
+      Serial.print(" AM");
+    }
+    else{
+      Serial.print(" PM");
+    }
+    Serial.print(" ");
+    Serial.print(day());
+    Serial.print(".");
+    Serial.print(month());
+    Serial.print(".");
+    Serial.print(year());
+    Serial.println();
+  #endif  
 }
 
 void printDigits(int digits)
 {
-  // utility for digital clock display: prints preceding colon and leading 0
-  Serial.print(":");
-  if (digits < 10)
-    Serial.print('0');
-  Serial.print(digits);
+  #ifdef DEBUG
+    // utility for digital clock display: prints preceding colon and leading 0
+    Serial.print(":");
+    if (digits < 10)
+      Serial.print('0');
+    Serial.print(digits);
+  #endif
 }
 
 /*-------- NTP code ----------*/
@@ -699,18 +752,24 @@ time_t getNtpTime()
   IPAddress ntpServerIP; // NTP server's ip address
 
   while (Udp.parsePacket() > 0) ; // discard any previously received packets
-  Serial.println("Transmit NTP Request");
+  #ifdef DEBUG
+    Serial.println("Transmit NTP Request");
+  #endif
   // get a random server from the pool
   WiFi.hostByName(ntpServerName, ntpServerIP);
-  Serial.print(ntpServerName);
-  Serial.print(": ");
-  Serial.println(ntpServerIP);
+  #ifdef DEBUG
+    Serial.print(ntpServerName);
+    Serial.print(": ");
+    Serial.println(ntpServerIP);
+  #endif
   sendNTPpacket(ntpServerIP);
   uint32_t beginWait = millis();
   while (millis() - beginWait < 1500) {
     int size = Udp.parsePacket();
     if (size >= NTP_PACKET_SIZE) {
-      Serial.println("Receive NTP Response");
+      #ifdef DEBUG
+        Serial.println("Receive NTP Response");
+      #endif
       Udp.read(packetBuffer, NTP_PACKET_SIZE);  // read packet into the buffer
       unsigned long secsSince1900;
       // convert four bytes starting at location 40 to a long integer
@@ -721,7 +780,9 @@ time_t getNtpTime()
       return secsSince1900 - 2208988800UL + timeZone * SECS_PER_HOUR;
     }
   }
-  Serial.println("No NTP Response :-(");  
+  #ifdef DEBUG
+    Serial.println("No NTP Response :-(");  
+  #endif
   ESP.restart();
   return 0; // return 0 if unable to get the time
 }
