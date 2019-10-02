@@ -14,10 +14,13 @@
  *            
  * 5/14/2019: -fixed daylight savings time bug by adding button
  *            -fixed bug where user had to wait 1 min for sunset to turn on
- *              -sunset never turns on
+ *            -sunset never turns on
  *              
  * 6/4/2019:  -added random color capability for wakeup
- *              -want to change how it works, so I can use the same funciton for a random, custom color
+ *            -want to change how it works, so I can use the same funciton for a random, custom color
+ *              
+ * 10/2/2019: -added DEBUG to be able to remove strings from stack, also removed Blynk token for public viewing
+ *            -removed autolight function
  */
 
 #include <ESP8266WiFi.h>
@@ -53,7 +56,6 @@ bool blynk_daylightSavings = false;
 bool custom = false;
 bool blynk_custom = false;
 bool prev_custom_state = true;
-bool PIR_state = false;
 bool movement_flag = false;
 bool blynk_random = false;
 bool blynk_random_color = false;
@@ -72,7 +74,6 @@ unsigned long prevSecTime = 0;
 const int wakeupDuration = 45;                  /*duration of the total wakeup routine in minutes*/
 const int sunsetDuration = 30;
 unsigned long prevDimTime = 0;
-unsigned long autolight_on_time;
 
 //variables for random color selection
 int randColorMix;
@@ -212,14 +213,6 @@ BLYNK_WRITE(V5)
     #endif
 }
 
-BLYNK_WRITE(V6)
-{
-    blynk_autolight = param.asInt();                        /*get state of autolight switch in app*/
-    #ifdef DEBUG
-      Serial.print("autolight: "); Serial.println(blynk_autolight);
-    #endif
-}
-
 BLYNK_WRITE(V7)
 {
     blynk_daylightSavings = param.asInt();                        /*get state of daylight savings switch in app*/
@@ -272,18 +265,6 @@ void setup() {
 
 void loop() {         //////////////////////////////////////////////see how often we loop through the loop() function///////////////////////////////////////////////////////
   Blynk.run();
-
-  PIR_state = digitalRead(PIR_pin);
-  if(PIR_state){                                  /*if the movement pin is high*/ 
-    #ifdef DEBUG  
-      Serial.println("motion detected");
-    #endif
-    checkSunsetTime();
-    checkAutolightTime();
-  }
-  if(millis() - autolight_on_time >= 60000){    /*if autolight has been on for a min, turn it off*/
-    autolightOff();
-  }
 
   //this updates the current time every second for an hour, so the server is only pinged once an hour
   if((millis() - prevMinTime) >= 60000){          /*if 60 seconds has passed*/
@@ -340,35 +321,6 @@ void checkWakeupTime()
     }
   }
   wakeUp = false;
-}
-
-void checkAutolightTime()
-{
-  #ifdef DEBUG
-    Serial.println("autolight time checking");
-  #endif
-  if(blynk_custom){                     /*if custom color is selected, dont turn on autolight*/
-    return;
-  }
-  if(!blynk_autolight){
-    return;
-  }
-  if(isPM()){                                   /*want to operate between hours of 8am to 9pm*/
-    if(hours < 9){
-      autolightOn();
-    }
-    else{
-      return;
-    }
-  }
-  if(isAM()){
-    if(hours >= 8){
-      autolightOn();
-    }
-    else{
-      return;
-    }
-  }
 }
 
 void checkSunsetTime()
@@ -674,26 +626,6 @@ void customColor(int new_r, int new_g, int new_b)
     Serial.print("  ");
     Serial.println(b);
   #endif
-}
-
-void autolightOn()
-{
-  #ifdef DEBUG
-    Serial.println("autolight on");
-  #endif
-  autolight_on_time = millis();
-  customColor(1023,1023,1023);
-}
-
-void autolightOff()
-{
-  if(blynk_custom){
-    return;
-  }
-  #ifdef DEBUG
-    Serial.println("autolight off");
-  #endif
-  customColor(0,0,0);
 }
 
 void digitalClockDisplay()
