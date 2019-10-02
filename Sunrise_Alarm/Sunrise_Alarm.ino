@@ -255,12 +255,7 @@ void setup() {
       Serial.print(".");
     #endif
   }
-  Udp.begin(localPort);
-  setSyncProvider(getNtpTime);
-  getNtpTime();
-  digitalClockDisplay();
-  checkWakeupTime();
-//  setSyncInterval(300);
+
   Blynk.begin(auth, ssid, pass);
   //Blynk.run();  
   while (Blynk.connect() != true){
@@ -269,6 +264,13 @@ void setup() {
     analogWrite(greenPin, 0);
     delay(1000);
   }
+  
+  Udp.begin(localPort);
+  setSyncProvider(getNtpTime);
+  getNtpTime();
+  digitalClockDisplay();
+  checkWakeupTime();
+//  setSyncInterval(300);
   Blynk.syncAll();
 }
 
