@@ -354,7 +354,7 @@ void checkSunsetTime()
 
 void randomColor(){
   //determine if this is going to be a mix of 3, 2, or 1 colors
-  randColorMix = random(1, 7);
+  randColorMix = random(1, 8);
   
   //for 1 color:
   //determine which color is selected
