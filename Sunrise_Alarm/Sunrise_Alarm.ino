@@ -39,15 +39,15 @@
 // Go to the Project Settings (nut icon).
 char auth[] = "!!!!!!!!!Blynk Token Here!!!!!!!!!";
 
-const int redPin = 14;
-const int bluePin = 12;
-const int greenPin = 13;
-int r = 0;
-int g = 0;
-int b = 0;
-int custom_r;
-int custom_g;
-int custom_b;
+const byte redPin = 14;
+const byte bluePin = 12;
+const byte greenPin = 13;
+byte r = 0;
+byte g = 0;
+byte b = 0;
+byte custom_r;
+byte custom_g;
+byte custom_b;
 int minutes = 0;
 int seconds = 0;
 int hours = 0;
@@ -61,10 +61,10 @@ bool blynk_custom = false;
 bool prev_custom_state = true;
 bool PIR_state = false;
 bool movement_flag = false;
-int PIR_pin = 4;
+byte PIR_pin = 4;
 //weekday();         // day of the week (1-7), Sunday is day 1
-int prevWakeUpDay;
-int prevSunsetDay;
+byte prevWakeUpDay;
+byte prevSunsetDay;
 int weekdayWakeupHour = 0;
 int weekdayWakeupMinute = 0;
 int weekendWakeupHour = 0;
