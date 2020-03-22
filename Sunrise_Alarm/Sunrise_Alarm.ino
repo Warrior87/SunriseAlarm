@@ -14,12 +14,16 @@
  *            
  * 5/14/2019: -fixed daylight savings time bug by adding button
  *            -fixed bug where user had to wait 1 min for susnet to turn on
+ *            
+ * add debug for serial prints
+ * add routerLogin calls
  */
 
 #include <ESP8266WiFi.h>
 #include <WiFiUdp.h>
 #include <TimeLib.h>
 #include <BlynkSimpleEsp8266.h>
+#include <routerLogin.h>
 
 // You should get Auth Token in the Blynk App.
 // Go to the Project Settings (nut icon).
@@ -64,8 +68,8 @@ const int sunsetDuration = 30;
 unsigned long prevDimTime = 0;
 unsigned long autolight_on_time;
 
-char ssid[] = "SSID";  //  your network SSID (name)
-char pass[] = "password";       // your network password
+//char ssid[] = "example";  //  your network SSID (name)
+//char pass[] = "example";       // your network password
 
 // NTP Servers:
 static const char ntpServerName[] = "us.pool.ntp.org";
