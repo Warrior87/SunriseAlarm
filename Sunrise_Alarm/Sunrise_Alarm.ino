@@ -40,9 +40,9 @@
 // Go to the Project Settings (nut icon).
 const char* auth = AUTH;
 
-const byte redPin = 14;
-const byte bluePin = 12;
-const byte greenPin = 13;
+const byte redPin = 14; //D5
+const byte bluePin = 12; //D6
+const byte greenPin = 13; //D7
 byte r = 0;
 byte g = 0;
 byte b = 0;
