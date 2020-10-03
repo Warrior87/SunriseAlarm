@@ -34,10 +34,11 @@
 #include <TimeLib.h>
 #include <BlynkSimpleEsp8266.h>
 #include <routerLogin.h>
+#include <BlynkToken.h>
 
 // You should get Auth Token in the Blynk App.
 // Go to the Project Settings (nut icon).
-char auth[] = "!!!!!!!!!Blynk Token Here!!!!!!!!!";
+const char* auth = AUTH;
 
 const byte redPin = 14;
 const byte bluePin = 12;
@@ -78,8 +79,8 @@ const int sunsetDuration = 30;
 unsigned long prevDimTime = 0;
 unsigned long autolight_on_time;
 
-//char ssid[] = "example";  //  your network SSID (name)
-//char pass[] = "example";       // your network password
+const char* ssid = STASSID;
+const char* pass = STAPSK;
 
 // NTP Servers:
 static const char ntpServerName[] = "us.pool.ntp.org";
@@ -222,6 +223,10 @@ void setup() {
   #ifdef DEBUG
     Serial.begin(115200);
   #endif
+    /* Explicitly set the ESP8266 to be a WiFi-client, otherwise, it by default,
+       would try to act as both a client and an access-point and could cause
+       network-issues with your other WiFi-devices on your WiFi-network. */
+    WiFi.mode(WIFI_STA);
     WiFi.begin(ssid, pass);
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
@@ -241,12 +246,12 @@ void setup() {
 void loop() {         //////////////////////////////////////////////see how often we loop through the loop() function///////////////////////////////////////////////////////
   Blynk.run();
 
-  PIR_state = digitalRead(PIR_pin);
-  if(PIR_state){                                  /*if the movement pin is high*/   
-    DEBUG_PRINTLN("motion detected");
-    checkSunsetTime();
-    checkAutolightTime();
-  }
+//  PIR_state = digitalRead(PIR_pin);
+//  if(PIR_state){                                  /*if the movement pin is high*/   
+//    DEBUG_PRINTLN("motion detected");
+//    checkSunsetTime();
+//    checkAutolightTime();
+//  }
   if(millis() - autolight_on_time >= 60000){    /*if autolight has been on for a min, turn it off*/
     autolightOff();
   }
