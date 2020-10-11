@@ -41,8 +41,8 @@
 const char* auth = AUTH;
 
 const byte redPin = 14; //D5
-const byte bluePin = 12; //D6
-const byte greenPin = 13; //D7
+const byte bluePin = 13; //D7
+const byte greenPin = 12; //D6
 byte r = 0;
 byte g = 0;
 byte b = 0;
